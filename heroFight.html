@@ -1,0 +1,249 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title>Hero Fight</title>
+    
+     <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+ 
+    <script type="text/javascript">
+        function random(s, e) {
+            var iRan, iMax, iMin, iRtn;
+            s = parseInt(s);
+            e = parseInt(e);
+            iRan = Math.random();
+            if (!isNaN(e)) { // 是否有可转换成数字的第二个参数
+                iMax = Math.max(s, e);
+                iMin = Math.min(s, e);
+                iRtn = Math.ceil(iRan * (iMax - iMin) + iMin);
+                if (iRtn >= e) iRtn = iRtn - 1; // 如果生成的随机数>=传入最大的数时减1
+                return iRtn;
+            }
+            if (!isNaN(s)) {// 是否有可转换成数字的第一个参数
+                iRtn = Math.ceil(iRan * s);
+                if (iRtn >= s) iRtn = iRtn - 1;
+                return iRtn;
+            }
+            return 0;
+        }
+
+        var HeroType = {
+            Unknown: 0,
+            Intelligent: 1,
+            Strength: 2,
+            Agile: 3
+        };
+        function Hero() {
+            this.Name = "";
+            this.Camp = "";
+            this.IsDead = false;
+            this.Type = HeroType.Unknown;
+            this.Level = 1;
+            this.HP = 1;
+            this.MP = 1;
+            this.MinAttack = 1;
+            this.MaxAttack = 1;
+            this.AttackRange = "0-1";
+            this.Armor = 1;
+            this.Attack = function () {
+                return random(this.MinAttack, this.MaxAttack);
+            }
+            this.Damage = function (damage) {
+                var realDamage = parseInt(damage * (1.0 - this.Armor * 0.1));
+                this.HP = parseInt(this.HP - realDamage);
+                if (this.HP <= 0) {
+                    this.IsDead = true;
+                    this.HP = 0;
+                }
+                return realDamage;
+            }
+            this.Run = function () {
+                return this.Name + ":for the " + this.Camp;
+            }
+        }
+
+        function Archmage(name) {
+            Hero.call(this);
+
+            this.Name = name;
+            this.Armor = 3;
+            this.AttackRange = "15-27";
+            this.Camp = "Human";
+            this.HP = 350;
+            this.Level = 1;
+            this.MaxAttack = this.AttackRange.split("-")[1];
+            this.MinAttack = this.AttackRange.split("-")[0];
+            this.Type = HeroType.Intelligent;
+            this.MP = 500;
+        }
+
+        function BladeMaster(name) {
+            Hero.call(this);
+            this.CriDamageLevel = 0;
+            this.Name = name;
+            this.Armor = 4;
+            this.AttackRange = "18-32";
+            this.Camp = "ORC";
+            this.HP = 400;
+            this.Level = 1;
+            this.MaxAttack = this.AttackRange.split("-")[1];
+            this.MinAttack = this.AttackRange.split("-")[0];
+            this.Type = HeroType.Agile;
+            this.MP = 100;
+            this.CriDamage = function () {
+                var temp = random(1, 100);
+                if (temp <= 15) {
+                    this.CriDamageLevel = 3;
+                    return 3;
+                }
+                if (temp > 15 && temp <= 30) {
+                    this.CriDamageLevel = 2;
+                    return 2;
+                }
+                if (temp > 30) {
+                    this.CriDamageLevel = 0;
+                    return 1;
+                }
+
+                return 1;
+            }
+            this.Attack = function () {
+                return random(this.MinAttack, this.MaxAttack) * this.CriDamage();
+            }
+        }
+
+         
+
+        $(document).ready(function () {
+             
+            /*$("input[name='btn_ready']").click(function () {
+                if ($(this).prev().val() != "") {
+                    var newb = $(this).after("<input value='RollIt' type='button' name='roll'/>");
+                    $(this).remove();
+                    $(newb).click(function () {
+                        var roll = random(1, 100);
+                        $(this).data("rp", roll);
+                        var newc = $(this).after("<input value='Attack' type='button' name='attack' disabled='disabled'/>");
+                        $(this).remove();
+                        if ($(newc).data("hero") == null) {
+                            var hero = new BladeMaster("");
+                            $(newc).data("hero", hero);
+                        }
+                        
+                    });
+                }
+            });*/
+            $("#btn_go").click(function () {
+                if ($("#h1").val() != "" && $("#h2").val() != "") {
+                    $("#attack2").data("hero", null);
+                    $("#attack1").data("hero", null);
+
+                     
+                    $("input[name='attack']").hide();
+
+                    var h1 = new BladeMaster($("#h1").val());
+                    var h2 = new BladeMaster($("#h2").val());
+                    $("#attack1").data("hero", h1);
+                    $("#attack2").data("hero", h2);
+                    
+                    if (random(0, 100) >= 50) {
+                        $("#attack1").show("slow");
+                    }
+                    else {
+                        $("#attack2").show("slow");
+                    }
+                }
+                else {
+                    alert("please enter player name");
+                }
+            });
+
+            $("#attack1").click(function () {
+                $("#attack1").hide();
+                $("#attack2").show();
+                var hero1 = $("#attack1").data("hero");
+                var hero2 = $("#attack2").data("hero");
+                
+                var damage = hero1.Attack();
+                var realDamage = hero2.Damage(damage);
+                $("#attack1").data("hero", hero1);
+                $("#attack2").data("hero", hero2);
+                $("#sp_hp2").html("current hp is :" + hero2.HP);
+                if (hero1.CriDamageLevel != 0) {
+                    $("<div style='color:red'>" + hero1.Name + " attack " + hero2.Name + ", make damage " + realDamage + "(" + hero1.CriDamageLevel + " * cri damage), " + hero2.Name + " hp is " + hero2.HP + ",</div>").appendTo($("#result"));
+                }
+                else {
+                    $("<div>" + hero1.Name + " attack " + hero2.Name + ", make damage " + realDamage + "(" + hero1.CriDamageLevel + " * cri damage), " + hero2.Name + " hp is " + hero2.HP + ",</div>").appendTo($("#result"));
+                }
+                if (hero2.IsDead) {
+                    $("<div>" + hero1.Run() + "</div>").appendTo($("#result"));
+                    alert("the winner is :" + hero1.Name);
+                    $("#attack2").data("hero", null);
+                    $("#attack1").data("hero", null);
+
+                    $("#h1").val("");
+                    $("#h2").val("");
+                    $("input[name='attack']").hide();
+                    return;
+                }
+            });
+
+            $("#attack2").click(function () {
+                $("#attack2").hide();
+                $("#attack1").show();
+                var hero1 = $("#attack2").data("hero");
+                var hero2 = $("#attack1").data("hero");
+                var damage = hero1.Attack();
+                var realDamage = hero2.Damage(damage);
+                $("#attack2").data("hero", hero1);
+                $("#attack1").data("hero", hero2);
+                $("#sp_hp1").html("current hp is :" + hero2.HP);
+                if (hero1.CriDamageLevel != 0) {
+                    $("<div style='color:red'>" + hero1.Name + " attack " + hero2.Name + ", make damage " + realDamage + "(" + hero1.CriDamageLevel + " * cri damage), " + hero2.Name + " hp is " + hero2.HP + ",</div>").appendTo($("#result"));
+                }
+                else {
+                    $("<div>" + hero1.Name + " attack " + hero2.Name + ", make damage " + realDamage + "(" + hero1.CriDamageLevel + " * cri damage), " + hero2.Name + " hp is " + hero2.HP + ",</div>").appendTo($("#result"));
+                }
+                if (hero2.IsDead) {
+                    $("<div>" + hero1.Run() + "</div>").appendTo($("#result"));
+                    alert("the winner is :" + hero1.Name + ",click ok to play again");
+                    $("#attack2").data("hero", null);
+                    $("#attack1").data("hero", null);
+
+                    $("#h1").val("");
+                    $("#h2").val("");
+                    $("input[name='attack']").hide();
+                    return;
+                }
+            });
+        });
+         
+    </script>
+</head>
+<body>
+       <div class="header"></div>
+           <div>
+               Hero Player 1,Please enter your Name:
+               <input id="h1" /> <input name="btn_ready" type="button" value="Ready" style="display:none"/>
+               <span id="sp_hp1"></span>
+               <input id="attack1" type="button" value="Attack" name="attack" style="display:none"/>
+           </div>
+
+            <div >
+               Hero Player 2,Please enter your Name:
+                <input id="h2" /> <input name="btn_ready" type="button" value="Ready" style="display:none"/>
+                <span id="sp_hp2"></span>
+                <input id="attack2" type="button" value="Attack" name="attack" style="display:none"/>
+           </div>
+
+           <div>
+               <input id="btn_go" type="button" value="GoGoGo"/>
+               <div id="result"></div>
+
+           </div>
+
+
+
+
+        <div class="footer"></div>
+</body>
+</html>
